@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../model/product_model.dart';
+import '../service/cart_service.dart';
+import 'cart_screen.dart';
 
 class ProductDetailScreen extends StatelessWidget {
   final ProductModel product;
@@ -9,6 +11,8 @@ class ProductDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cartService = CartService();
+
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
@@ -16,11 +20,19 @@ class ProductDetailScreen extends StatelessWidget {
           'assets/images/logo_usedev.png',
           height: 40,
         ),
-        actions: const [
-          Icon(Icons.person_outline, size: 40),
-          SizedBox(width: 10),
-          Icon(Icons.shopping_cart_outlined, size: 40),
-          SizedBox(width: 20),
+        actions: [
+          const Icon(Icons.person_outline, size: 40),
+          const SizedBox(width: 10),
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const CartScreen()),
+              );
+            },
+            icon: const Icon(Icons.shopping_cart_outlined, size: 40),
+          ),
+          const SizedBox(width: 20),
         ],
       ),
       body: SingleChildScrollView(
@@ -105,10 +117,17 @@ class ProductDetailScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: IconButton(
-                icon: const Icon(Icons.add_shopping_cart, color: Colors.white),
+                icon: const Icon(
+                  Icons.add_shopping_cart,
+                  color: Colors.white,
+                ),
                 onPressed: () {
+                  cartService.addToCart(product);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Adicionado ao carrinho!')),
+                    const SnackBar(
+                      content: Text('Adicionado ao carrinho!'),
+                      duration: Duration(seconds: 1),
+                    ),
                   );
                 },
               ),
@@ -123,7 +142,13 @@ class ProductDetailScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                onPressed: () {},
+                onPressed: () {
+                  cartService.addToCart(product);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const CartScreen()),
+                  );
+                },
                 child: Text(
                   'COMPRAR AGORA',
                   style: TextStyle(
