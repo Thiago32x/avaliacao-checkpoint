@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
 import '../model/product_model.dart';
 
+class CartItem {
+  final ProductModel product;
+  int quantity;
+
+  CartItem({required this.product, this.quantity = 1});
+}
+
 class CartService extends ChangeNotifier {
   static final CartService _instance = CartService._internal();
 
@@ -10,36 +17,45 @@ class CartService extends ChangeNotifier {
 
   CartService._internal();
 
-  final List<ProductModel> _items = [];
+  final Map<int, CartItem> _cartItems = {};
 
-  List<ProductModel> get items => List.unmodifiable(_items);
-
-  bool isInCart(ProductModel product) {
-    return _items.indexWhere((item) => item.id == product.id) != -1;
-  }
+  List<CartItem> get items => _cartItems.values.toList();
 
   void addToCart(ProductModel product) {
-    // Agora permite adicionar múltiplas unidades do mesmo produto
-    _items.add(product);
+    if (_cartItems.containsKey(product.id)) {
+      _cartItems[product.id]!.quantity++;
+    } else {
+      _cartItems[product.id] = CartItem(product: product);
+    }
     notifyListeners();
   }
 
   void removeFromCart(ProductModel product) {
-    int index = _items.indexWhere((item) => item.id == product.id);
-    if (index != -1) {
-      _items.removeAt(index);
+    if (_cartItems.containsKey(product.id)) {
+      if (_cartItems[product.id]!.quantity > 1) {
+        _cartItems[product.id]!.quantity--;
+      } else {
+        _cartItems.remove(product.id);
+      }
       notifyListeners();
     }
   }
 
+  void removeEntireProduct(ProductModel product) {
+    _cartItems.remove(product.id);
+    notifyListeners();
+  }
+
   void clearCart() {
-    _items.clear();
+    _cartItems.clear();
     notifyListeners();
   }
 
   double get totalPrice {
-    return _items.fold(0, (total, current) => total + current.price);
+    return _cartItems.values.fold(0, (total, item) => total + (item.product.price * item.quantity));
   }
 
-  int get itemCount => _items.length;
+  int get itemCount {
+    return _cartItems.values.fold(0, (total, item) => total + item.quantity);
+  }
 }

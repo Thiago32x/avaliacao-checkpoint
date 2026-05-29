@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../model/product_model.dart';
 import '../service/cart_service.dart';
 import 'cart_screen.dart';
+import 'login_screen.dart';
 
 class ProductDetailScreen extends StatelessWidget {
   final ProductModel product;
@@ -21,16 +22,34 @@ class ProductDetailScreen extends StatelessWidget {
           height: 40,
         ),
         actions: [
-          const Icon(Icons.person_outline, size: 40),
-          const SizedBox(width: 10),
           IconButton(
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const CartScreen()),
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
               );
             },
-            icon: const Icon(Icons.shopping_cart_outlined, size: 40),
+            icon: const Icon(Icons.person_outline, size: 40),
+          ),
+          const SizedBox(width: 10),
+          ListenableBuilder(
+            listenable: cartService,
+            builder: (context, child) {
+              return Badge(
+                label: Text(cartService.itemCount.toString()),
+                isLabelVisible: cartService.itemCount > 0,
+                offset: const Offset(-5, 5),
+                child: IconButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const CartScreen()),
+                    );
+                  },
+                  icon: const Icon(Icons.shopping_cart_outlined, size: 40),
+                ),
+              );
+            },
           ),
           const SizedBox(width: 20),
         ],
@@ -102,7 +121,7 @@ class ProductDetailScreen extends StatelessWidget {
           color: Colors.white,
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.3),
+              color: Colors.grey.withValues(alpha: 0.3),
               spreadRadius: 1,
               blurRadius: 5,
               offset: const Offset(0, -3),

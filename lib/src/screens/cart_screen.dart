@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../service/cart_service.dart';
-import '../model/product_model.dart';
+import '../service/login_service.dart';
+import 'login_screen.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -12,6 +13,7 @@ class CartScreen extends StatefulWidget {
 
 class _CartScreenState extends State<CartScreen> {
   final CartService _cartService = CartService();
+  final LoginService _loginService = LoginService();
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +28,9 @@ class _CartScreenState extends State<CartScreen> {
       body: ListenableBuilder(
         listenable: _cartService,
         builder: (context, child) {
-          if (_cartService.items.isEmpty) {
+          final List<CartItem> cartItems = _cartService.items;
+
+          if (cartItems.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -50,10 +54,10 @@ class _CartScreenState extends State<CartScreen> {
             children: [
               Expanded(
                 child: ListView.builder(
-                  itemCount: _cartService.items.length,
+                  itemCount: cartItems.length,
                   itemBuilder: (context, index) {
-                    final product = _cartService.items[index];
-                    return _buildCartItem(product);
+                    final CartItem cartItem = cartItems[index];
+                    return _buildCartItem(cartItem);
                   },
                 ),
               ),
@@ -65,7 +69,8 @@ class _CartScreenState extends State<CartScreen> {
     );
   }
 
-  Widget _buildCartItem(ProductModel product) {
+  Widget _buildCartItem(CartItem cartItem) {
+    final product = cartItem.product;
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -97,22 +102,90 @@ class _CartScreenState extends State<CartScreen> {
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    'R\$ ${product.price.toStringAsFixed(2)}',
+                    'Un: R\$ ${product.price.toStringAsFixed(2)}',
                     style: const TextStyle(
                       fontSize: 14,
                       color: Colors.green,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+                  const SizedBox(height: 5),
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => _cartService.removeFromCart(product),
+                        icon: const Icon(Icons.remove_circle_outline),
+                        iconSize: 20,
+                      ),
+                      Text(
+                        '${cartItem.quantity}',
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      IconButton(
+                        onPressed: () => _cartService.addToCart(product),
+                        icon: const Icon(Icons.add_circle_outline),
+                        iconSize: 20,
+                      ),
+                    ],
+                  )
                 ],
               ),
             ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline, color: Colors.red),
-              onPressed: () => _cartService.removeFromCart(product),
+            Column(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, color: Colors.red),
+                  onPressed: () => _cartService.removeEntireProduct(product),
+                ),
+                Text(
+                  'R\$ ${(product.price * cartItem.quantity).toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                )
+              ],
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _handleFinalizePurchase() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Autenticação de Segurança',
+          style: TextStyle(fontFamily: GoogleFonts.orbitron().fontFamily),
+        ),
+        content: const Text(
+            'Para finalizar sua compra com segurança, você precisa confirmar seus dados realizando o login novamente.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('CANCELAR'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              // Realiza logout forçado para exigir novos dados na tela de login
+              await _loginService.logout();
+              
+              if (mounted) {
+                Navigator.pop(context); // Fecha o diálogo
+                // Vai para a tela de login passando o parâmetro para limpar o carrinho após sucesso
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const LoginScreen(isFromCheckout: true),
+                  ),
+                );
+              }
+            },
+            child: const Text('CONFIRMAR E LOGAR'),
+          ),
+        ],
       ),
     );
   }
@@ -124,7 +197,7 @@ class _CartScreenState extends State<CartScreen> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.3),
+            color: Colors.grey.withValues(alpha: 0.3),
             spreadRadius: 1,
             blurRadius: 5,
             offset: const Offset(0, -3),
@@ -166,9 +239,7 @@ class _CartScreenState extends State<CartScreen> {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              onPressed: () {
-                // Lógica de finalização de compra
-              },
+              onPressed: _handleFinalizePurchase,
               child: Text(
                 'FINALIZAR COMPRA',
                 style: TextStyle(
